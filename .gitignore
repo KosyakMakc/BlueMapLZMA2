@@ -1,13 +1,1 @@
-.gradle
-.idea
-build
-gradle.properties
 *.so
-*.dll
-*.dylib
-*.o
-*.a
-bin/
-out/
-tmp
-benchmark_results.md

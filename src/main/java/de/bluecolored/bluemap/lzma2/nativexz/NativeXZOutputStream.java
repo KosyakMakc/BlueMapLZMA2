@@ -111,15 +111,20 @@ public class NativeXZOutputStream extends OutputStream {
     public void close() throws IOException {
         if (closed) return;
         try {
-            finish();
-        } finally {
-            if (pool != null) {
-                pool.release(handle);
-            } else {
-                NativeLZMA2.free(handle);
+            try {
+                finish();
+            } finally {
+                if (pool != null) {
+                    pool.release(handle);
+                } else {
+                    NativeLZMA2.free(handle);
+                }
+                closed = true;
             }
+        } finally {
+            // Must not be skipped if finish()/release() throws, otherwise the
+            // underlying file/stream (and its buffers) would never be closed.
             out.close();
-            closed = true;
         }
     }
 
