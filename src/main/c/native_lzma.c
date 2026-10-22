@@ -52,6 +52,13 @@ JNIEXPORT jint JNICALL Java_de_bluecolored_bluemap_lzma2_nativexz_NativeLZMA2_re
     native_handle *h = (native_handle *)handle;
     if (!h) return -1;
 
+    // Release the memory of the previous stream first, otherwise re-initializing
+    // lzma_stream_encoder()/lzma_stream_encoder_mt() on an already initialized
+    // stream leaks the old encoder state (dictionary + MT worker pool) every time
+    // a pooled encoder is reused.
+    lzma_end(&h->strm);
+    memset(&h->strm, 0, sizeof(lzma_stream));
+
     lzma_ret ret;
     if (threads > 1 || threads == 0) {
         lzma_mt mt = {
@@ -74,6 +81,11 @@ JNIEXPORT jint JNICALL Java_de_bluecolored_bluemap_lzma2_nativexz_NativeLZMA2_re
 JNIEXPORT jint JNICALL Java_de_bluecolored_bluemap_lzma2_nativexz_NativeLZMA2_resetDecoder(JNIEnv *env, jclass cls, jlong handle) {
     native_handle *h = (native_handle *)handle;
     if (!h) return -1;
+
+    // Same leak as in resetEncoder: free the old decoder state before
+    // re-initializing the stream.
+    lzma_end(&h->strm);
+    memset(&h->strm, 0, sizeof(lzma_stream));
 
     lzma_ret ret = lzma_stream_decoder(&h->strm, UINT64_MAX, LZMA_CONCATENATED);
     return (jint)ret;
